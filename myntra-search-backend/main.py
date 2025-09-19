@@ -29,7 +29,7 @@ from fastapi.staticfiles import StaticFiles
 IMAGE_DIR = Path("data") / "Images"
 CSV_FILE = Path("data") / "products.csv"
 MODEL_NAME = "sentence-transformers/clip-ViT-L-14"
-MAX_PRODUCTS_TO_INDEX = 1000
+MAX_PRODUCTS_TO_INDEX = 14330
 
 document_store = InMemoryDocumentStore(embedding_similarity_function="cosine")
 text_embedder = SentenceTransformersTextEmbedder(model=MODEL_NAME)

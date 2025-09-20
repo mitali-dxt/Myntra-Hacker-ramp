@@ -1,6 +1,3 @@
-# ======================================================================================
-# --- 0. SETUP AND IMPORTS ---
-# ======================================================================================
 import os
 from pathlib import Path
 from typing import List, Optional
@@ -8,9 +5,9 @@ import tempfile
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-import pickle  # NEW: Import for saving/loading the store
+import pickle 
+import google.generativeai as genai
 
-# --- Haystack Imports ---
 from haystack.core.pipeline import Pipeline
 from haystack.dataclasses import Document
 from haystack.components.embedders.image import SentenceTransformersDocumentImageEmbedder
@@ -19,27 +16,27 @@ from haystack.components.retrievers.in_memory import InMemoryEmbeddingRetriever
 from haystack.document_stores.in_memory import InMemoryDocumentStore
 from haystack.components.writers import DocumentWriter
 
-# --- FastAPI Imports ---
 from fastapi import FastAPI, Form, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-# ======================================================================================
-# --- 1. CONFIGURATION & GLOBAL INITIALIZATION ---
-# ======================================================================================
 IMAGE_DIR = Path("data") / "Images"
 CSV_FILE = Path("data") / "products.csv"
 STORE_FILE_PATH = Path("myntra_document_store.pkl")  
 MODEL_NAME = "sentence-transformers/clip-ViT-L-14"   
-MAX_PRODUCTS_TO_INDEX = 14330                       # Use the full dataset
+MAX_PRODUCTS_TO_INDEX = 14330
+
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+if GOOGLE_API_KEY:
+    genai.configure(api_key=GOOGLE_API_KEY)
+else:
+    print("⚠️ Google API Key not found. Vibe search will be disabled.")
 
 document_store = InMemoryDocumentStore(embedding_similarity_function="cosine")
 text_embedder = SentenceTransformersTextEmbedder(model=MODEL_NAME)
 image_embedder = SentenceTransformersDocumentImageEmbedder(model=MODEL_NAME, batch_size=32)
 retriever = InMemoryEmbeddingRetriever(document_store=document_store)
 
-# ======================================================================================
-# --- 2. OFFLINE INDEXING LOGIC ---
 def index_products_from_csv():
     global document_store
     print("🚀 Starting product indexing process from CSV...")
@@ -103,17 +100,60 @@ def index_products_from_csv():
 
     print(f"✅ Indexing complete. Total documents in store: {document_store.count_documents()}")
 
-# ======================================================================================
-# --- 3. ONLINE QUERYING LOGIC (No changes needed) ---
-# ======================================================================================
+def get_keywords_from_vibe(vibe_text: str) -> str:
+    """Takes a vibe/abstract query and returns concrete search keywords."""
+    if not GOOGLE_API_KEY:
+        return vibe_text
+
+    try:
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        prompt = f"""
+        You are a fashion expert and stylist for Myntra. A user is searching for an outfit based on a "vibe".
+        Your task is to convert their abstract query into a comma-separated list of 7-10 diverse and concrete search keywords.
+        Crucially, only include clothing items like tops, bottoms, dresses, and jackets. **Do not include accessories, bags, jewelry, or footwear.**
+        Focus on clothing types, styles, colors, and patterns. Do not include explanations.
+
+        Vibe: "outfits for a rainy day in Bengaluru"
+        Keywords: "waterproof jacket, dark wash jeans, cozy sweater, trench coat, casual trousers, full-sleeve top, relaxed-fit pants"
+
+        Vibe: "what to wear to a sangeet"
+        Keywords: "lehenga, sharara, anarkali suit, vibrant colors, intricate embroidery, festive blouse, indian ethnic wear, embroidered kurta"
+        
+        Vibe: "outfit for a coffee date in Mumbai"
+        Keywords: "casual dress, pink dress, white top, denim skirt, A-line skirt, flared jeans, crop top, brunch outfit"
+
+        Vibe: "bohemian festival look"
+        Keywords: "flowy maxi dress, fringe vest, crochet top, wide-leg pants, paisley print blouse, peasant top, bohemian skirt"
+
+        Vibe: "{vibe_text}"
+        Keywords:
+        """
+        response = model.generate_content(prompt)
+        return response.text.strip()
+    except Exception as e:
+        print(f"Error calling Gemini API: {e}")
+        return vibe_text
+    
 def search_products(query_text: Optional[str], query_image_path: Optional[Path], top_k: int = 10) -> List:
-    # This function remains the same
     text_embedding, image_embedding = None, None
-    if query_text:
-        text_embedding = text_embedder.run(text=query_text)["embedding"]
+    processed_text = query_text
+
+    # --- 1. Check for "vibe" and process with Gemini if needed ---
+    if query_text and len(query_text.split()) > 3: 
+        print(f"Vibe detected. Getting keywords for: '{query_text}'")
+        processed_text = get_keywords_from_vibe(query_text)
+        print(f"Using generated keywords: '{processed_text}'")
+
+    # --- 2. Create text embedding if text is provided ---
+    if processed_text:
+        text_embedding = text_embedder.run(text=processed_text)["embedding"]
+
+    # --- 3. Create image embedding if image is provided ---
     if query_image_path:
         image_doc = Document(meta={"file_path": str(query_image_path.resolve())})
         image_embedding = image_embedder.run(documents=[image_doc])["documents"][0].embedding
+
+    # --- 4. Combine embeddings ---
     if text_embedding is not None and image_embedding is not None:
         final_embedding = np.average([text_embedding, image_embedding], axis=0).tolist()
     elif text_embedding is not None:
@@ -122,6 +162,8 @@ def search_products(query_text: Optional[str], query_image_path: Optional[Path],
         final_embedding = image_embedding
     else:
         return []
+
+    # --- 5. Run the retriever and format results (No changes here) ---
     result = retriever.run(query_embedding=final_embedding, top_k=top_k)
     formatted_results = []
     for doc in result["documents"]:
@@ -161,7 +203,7 @@ async def handle_search(
     top_k: int = Form(10),
     query_image: Optional[UploadFile] = File(None)
 ):
-    # This function remains the same
+    print(f"--- Backend received: query_text='{query_text}' ---")
     temp_image_path = None
     try:
         if query_image and query_image.filename:

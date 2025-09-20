@@ -14,7 +14,7 @@ import pickle  # NEW: Import for saving/loading the store
 from haystack.core.pipeline import Pipeline
 from haystack.dataclasses import Document
 from haystack.components.embedders.image import SentenceTransformersDocumentImageEmbedder
-from haystack.components.embedders.text import SentenceTransformersTextEmbedder
+from haystack.components.embedders.sentence_transformers_text_embedder import SentenceTransformersTextEmbedder
 from haystack.components.retrievers.in_memory import InMemoryEmbeddingRetriever
 from haystack.document_stores.in_memory import InMemoryDocumentStore
 from haystack.components.writers import DocumentWriter
@@ -29,8 +29,8 @@ from fastapi.staticfiles import StaticFiles
 # ======================================================================================
 IMAGE_DIR = Path("data") / "Images"
 CSV_FILE = Path("data") / "products.csv"
-STORE_FILE_PATH = Path("myntra_document_store.pkl")  # NEW: File to save the index
-MODEL_NAME = "sentence-transformers/clip-ViT-B-32"   # Using the faster model
+STORE_FILE_PATH = Path("myntra_document_store.pkl")  
+MODEL_NAME = "sentence-transformers/clip-ViT-L-14"   
 MAX_PRODUCTS_TO_INDEX = 14330                       # Use the full dataset
 
 document_store = InMemoryDocumentStore(embedding_similarity_function="cosine")
@@ -40,22 +40,31 @@ retriever = InMemoryEmbeddingRetriever(document_store=document_store)
 
 # ======================================================================================
 # --- 2. OFFLINE INDEXING LOGIC ---
-# ======================================================================================
 def index_products_from_csv():
+    global document_store
     print("🚀 Starting product indexing process from CSV...")
 
-    # The check for existing documents is now in the on_startup function
+    # Load existing documents if the file exists
+    if STORE_FILE_PATH.exists():
+        print(f"🧠 Found existing documents file. Loading '{STORE_FILE_PATH}'...")
+        with open(STORE_FILE_PATH, "rb") as f:
+            # We load the LIST of documents, not the store object
+            all_docs = pickle.load(f)
+        document_store.write_documents(all_docs)
+        print(f"✅ Loaded {document_store.count_documents()} documents into the store.")
     
-    df = pd.read_csv(CSV_FILE)
-    df = df.head(MAX_PRODUCTS_TO_INDEX)
+    # --- Prepare all documents from CSV and filter out those already indexed ---
+    df = pd.read_csv(CSV_FILE).head(MAX_PRODUCTS_TO_INDEX)
     df.drop_duplicates(subset=['p_id'], inplace=True)
     df = df.where(pd.notnull(df), None)
+    
+    existing_ids = {doc.id for doc in document_store.filter_documents()}
+    
     documents_to_index = []
-    print(f"🖼️ Preparing {len(df)} products for indexing...")
-
-    for _, row in tqdm(df.iterrows(), total=df.shape[0], desc="Preparing Documents"):
+    print(f"🖼️ Preparing documents...")
+    for _, row in df.iterrows():
         product_id = row.get('p_id')
-        if not product_id:
+        if not product_id or product_id in existing_ids:
             continue
         image_path = IMAGE_DIR / f"{product_id}.jpg"
         if not image_path.exists():
@@ -65,28 +74,34 @@ def index_products_from_csv():
         documents_to_index.append(doc)
 
     if not documents_to_index:
-        print("⚠️ No valid products with matching images found. Indexing skipped.")
+        print("✅ All products are already indexed. Nothing to do.")
         return
 
+    # --- Build the pipeline ---
     indexing_pipeline = Pipeline()
     indexing_pipeline.add_component("embedder", image_embedder)
-    indexing_pipeline.add_component("writer", DocumentWriter(document_store=document_store))
+    indexing_pipeline.add_component("writer", DocumentWriter(document_store=document_store, policy="overwrite"))
     indexing_pipeline.connect("embedder.documents", "writer.documents")
 
+    # --- Run the pipeline in batches, saving after each batch ---
     batch_size = 64
-    print(f"🧠 Generating embeddings for {len(documents_to_index)} products in batches of {batch_size}...")
+    print(f"🧠 Indexing {len(documents_to_index)} new products in batches of {batch_size}...")
+    
     for i in tqdm(range(0, len(documents_to_index), batch_size), desc="Indexing Batches"):
         batch = documents_to_index[i:i + batch_size]
-        indexing_pipeline.run({"embedder": {"documents": batch}})
-    
-    print(f"✅ Successfully indexed {document_store.count_documents()} products.")
+        try:
+            indexing_pipeline.run({"embedder": {"documents": batch}})
+            
+            # Save the LIST of ALL documents in the store after each successful batch
+            all_docs_in_store = document_store.filter_documents()
+            with open(STORE_FILE_PATH, "wb") as f:
+                pickle.dump(all_docs_in_store, f)
+                
+        except Exception as e:
+            print(f"\n⚠️ Could not process a batch. Error: {e}. Skipping batch and continuing...")
+            continue
 
-    # NEW: Save the populated document store to a file
-    print(f"💾 Saving document store to '{STORE_FILE_PATH}'...")
-    with open(STORE_FILE_PATH, "wb") as f:
-        pickle.dump(document_store, f)
-    print("✅ Document store saved successfully.")
-
+    print(f"✅ Indexing complete. Total documents in store: {document_store.count_documents()}")
 
 # ======================================================================================
 # --- 3. ONLINE QUERYING LOGIC (No changes needed) ---
@@ -132,22 +147,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, 
 @app.on_event("startup")
 def on_startup():
     print("🚀 Server starting up...")
-    
-    global document_store  # We need to modify the global variable
-    
-    # Check if a pre-indexed store file exists
-    if STORE_FILE_PATH.exists():
-        print(f"🧠 Loading existing document store from '{STORE_FILE_PATH}'...")
-        with open(STORE_FILE_PATH, "rb") as f:
-            document_store = pickle.load(f)
-        # Update the retriever to use the loaded store
-        retriever.document_store = document_store
-        print("✅ Document store loaded successfully.")
-    else:
-        # If no file exists, run the full indexing process
-        print("No existing store found. Starting full indexing...")
-        index_products_from_csv()
-
+    index_products_from_csv() 
     print("🔥 Warming up models...")
     text_embedder.warm_up()
     image_embedder.warm_up()

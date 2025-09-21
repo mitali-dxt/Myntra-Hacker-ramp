@@ -95,7 +95,9 @@ export default function CreatorDashboard() {
       sold_count: 18,
       total_sales: 45000,
       views: 12500,
-      engagement_rate: 8.5
+      engagement_rate: 8.5,
+      imageUrl: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1200&auto=format&fit=crop',
+      banner_image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1200&auto=format&fit=crop'
     },
     {
       _id: '2',
@@ -103,7 +105,9 @@ export default function CreatorDashboard() {
       status: 'upcoming',
       launch_datetime: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
       total_items: 18,
-      notification_count: 8500
+      notification_count: 8500,
+      imageUrl: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=1200&auto=format&fit=crop',
+      banner_image: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?q=80&w=1200&auto=format&fit=crop'
     },
     {
       _id: '3',
@@ -114,7 +118,9 @@ export default function CreatorDashboard() {
       sold_count: 15,
       total_sales: 32000,
       views: 9800,
-      engagement_rate: 12.3
+      engagement_rate: 12.3,
+      imageUrl: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1200&auto=format&fit=crop',
+      banner_image: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=1200&auto=format&fit=crop'
     }
   ];
 
@@ -144,6 +150,16 @@ export default function CreatorDashboard() {
     } catch (error) {
       console.error('Error updating profile:', error);
     }
+  };
+
+  const handleViewDrop = (dropId) => {
+    // Navigate to drop view page
+    router.push(`/creator/drops/${dropId}`);
+  };
+
+  const handleEditDrop = (dropId) => {
+    // Navigate to drop edit page  
+    router.push(`/creator/drops/${dropId}/edit`);
   };
 
 
@@ -362,8 +378,21 @@ export default function CreatorDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {drops.map(drop => (
                 <div key={drop._id} className="bg-white rounded-3xl shadow-lg border border-slate-200 overflow-hidden hover:shadow-xl transition-shadow">
-                  <div className="aspect-video bg-gradient-to-br from-slate-100 to-amber-100 flex items-center justify-center">
-                    <Package className="w-12 h-12 text-slate-400" />
+                  <div className="aspect-video bg-gradient-to-br from-slate-100 to-amber-100 flex items-center justify-center overflow-hidden">
+                    {drop.imageUrl || drop.banner_image ? (
+                      <img 
+                        src={drop.imageUrl || drop.banner_image} 
+                        alt={drop.title}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div className="w-full h-full bg-gradient-to-br from-slate-100 to-amber-100 flex items-center justify-center" style={{display: drop.imageUrl || drop.banner_image ? 'none' : 'flex'}}>
+                      <Package className="w-12 h-12 text-slate-400" />
+                    </div>
                   </div>
                   <div className="p-6">
                     <div className="flex items-center justify-between mb-3">
@@ -394,11 +423,17 @@ export default function CreatorDashboard() {
                     )}
 
                     <div className="flex space-x-2">
-                      <button className="flex-1 bg-slate-100 text-slate-700 py-2 rounded-xl font-semibold hover:bg-slate-200 transition-colors flex items-center justify-center space-x-1">
+                      <button 
+                        onClick={() => handleViewDrop(drop._id)}
+                        className="flex-1 bg-slate-100 text-slate-700 py-2 rounded-xl font-semibold hover:bg-slate-200 transition-colors flex items-center justify-center space-x-1"
+                      >
                         <Eye className="w-4 h-4" />
                         <span>View</span>
                       </button>
-                      <button className="flex-1 bg-amber-100 text-amber-700 py-2 rounded-xl font-semibold hover:bg-amber-200 transition-colors flex items-center justify-center space-x-1">
+                      <button 
+                        onClick={() => handleEditDrop(drop._id)}
+                        className="flex-1 bg-amber-100 text-amber-700 py-2 rounded-xl font-semibold hover:bg-amber-200 transition-colors flex items-center justify-center space-x-1"
+                      >
                         <Edit3 className="w-4 h-4" />
                         <span>Edit</span>
                       </button>

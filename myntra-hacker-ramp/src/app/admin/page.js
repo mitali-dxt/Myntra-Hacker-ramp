@@ -117,6 +117,24 @@ export default function AdminDashboard() {
       ]
     },
     {
+      id: 'tribes',
+      title: 'Fashion Tribes',
+      description: 'Manage fashion communities and AI product recommendations',
+      icon: Users,
+      color: 'from-pink-500 to-pink-600',
+      bgColor: 'bg-pink-50',
+      borderColor: 'border-pink-200',
+      stats: [
+        { label: 'Total Tribes', value: '8' },
+        { label: 'Members', value: '2.1K' },
+        { label: 'AI Products', value: '450+' }
+      ],
+      actions: [
+        { label: 'Manage Tribes', action: () => router.push('/admin/tribes') },
+        { label: 'Create New Tribe', action: () => router.push('/admin/tribes') }
+      ]
+    },
+    {
       id: 'quests',
       title: 'Quest Management',
       description: 'Create and manage style quests and challenges',
@@ -131,25 +149,7 @@ export default function AdminDashboard() {
       ],
       actions: [
         { label: 'Manage Quests', action: () => router.push('/admin/quests') },
-        { label: 'Create Quest', action: () => router.push('/admin/quests/create') }
-      ]
-    },
-    {
-      id: 'drops',
-      title: 'Drops Overview',
-      description: 'Monitor creator drops and marketplace performance',
-      icon: Package,
-      color: 'from-emerald-500 to-emerald-600',
-      bgColor: 'bg-emerald-50',
-      borderColor: 'border-emerald-200',
-      stats: [
-        { label: 'Total Drops', value: stats.totalDrops },
-        { label: 'Live Now', value: 12 },
-        { label: 'Avg. Sell Rate', value: '89%' }
-      ],
-      actions: [
-        { label: 'View All Drops', action: () => router.push('/drops') },
-        { label: 'Drop Analytics', action: () => router.push('/admin/analytics/drops') }
+        { label: 'Create Quest', action: () => router.push('/admin/quests') }
       ]
     },
     {

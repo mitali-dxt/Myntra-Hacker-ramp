@@ -13,6 +13,9 @@ const TribeSchema = new Schema(
     members: [{ type: Schema.Types.ObjectId, ref: "User" }],
     products: [{ type: Schema.Types.ObjectId, ref: "Product" }],
     isPublic: { type: Boolean, default: true },
+    // AI product recommendations tracking
+    aiProductCount: { type: Number, default: 0 },
+    lastAISync: { type: Date },
   },
   { timestamps: true }
 );

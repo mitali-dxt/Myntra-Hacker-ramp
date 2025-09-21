@@ -1,448 +1,165 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/db";
 import Product from "@/models/Product";
-import Tribe from "@/models/Tribe";
-import Drop from "@/models/Drop";
-import Quest from "@/models/Quest";
+// You don't need the other models for this specific operation
+// import Tribe from "@/models/Tribe";
+// import Drop from "@/models/Drop";
+// import Quest from "@/models/Quest";
 
 export async function POST() {
   await connectToDatabase();
 
-  const products = [
+  // This is your new data with the detailed descriptions
+  const productsWithNewDescriptions = [
     {
       title: "Men Black Slim Fit T-Shirt",
       brand: "Roadster",
-      description: "Cotton crew-neck tee",
-      price: 499,
-      mrp: 999,
-      discountPercent: 50,
-      category: "T-Shirts",
-      gender: "MEN",
-      sizes: ["S","M","L","XL"],
-      colors: ["Black"],
-      images: [
-        "https://images.unsplash.com/photo-1520971347561-8c6154b87b1e?q=80&w=1080&auto=format&fit=crop"
-      ],
-      tags: ["streetwear","basic"],
+      description: "A timeless wardrobe staple from Roadster, this black slim-fit t-shirt is crafted from breathable pure cotton for all-day comfort. Featuring a classic crew-neck design, it's the perfect canvas for any look. Occasion: Ideal for casual outings, weekend layering, or as a versatile basic. Season: An all-season essential. Vibe: Effortless, minimalist, and cool.",
     },
     {
       title: "Women Floral Summer Dress",
       brand: "Sassafras",
-      description: "A-line midi with floral print",
-      price: 1299,
-      mrp: 1999,
-      discountPercent: 35,
-      category: "Dresses",
-      gender: "WOMEN",
-      sizes: ["XS","S","M","L"],
-      colors: ["Red"],
-      images: [
-        "https://images.unsplash.com/photo-1520975693411-6b1e923a56f7?q=80&w=1080&auto=format&fit=crop"
-      ],
-      tags: ["summer","floral"],
+      description: "Embrace the sunshine with this charming floral summer dress from Sassafras. Designed with a flattering A-line silhouette and a vibrant floral print, this midi dress is made from a lightweight and flowy viscose rayon. Occasion: Perfect for weekend brunches, beach vacations, or any sunny day out. Season: A must-have for your summer and spring wardrobe. Vibe: Cheerful, feminine, and effortlessly romantic.",
     },
     {
       title: "Unisex White Sneakers",
       brand: "HRX",
-      description: "Low-top everyday sneakers",
-      price: 1799,
-      mrp: 2499,
-      discountPercent: 28,
-      category: "Shoes",
-      gender: "UNISEX",
-      sizes: ["6","7","8","9","10"],
-      colors: ["White"],
-      images: [
-        "https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1080&auto=format&fit=crop"
-      ],
-      tags: ["sneakers","streetwear"],
+      description: "Step up your style game with these versatile white sneakers from HRX. Featuring a clean, low-top design and a cushioned footbed for superior comfort, they are built for the urban hustle. Material: Durable synthetic upper with a comfortable rubber sole. Occasion: Your go-to choice for everyday wear, from college to casual outings. Season: A timeless, all-season footwear staple. Vibe: Sporty, modern, and effortlessly cool.",
     },
     {
       title: "Men Blue Slim Jeans",
       brand: "Levis",
-      description: "Stretch denim with classic wash",
-      price: 2199,
-      mrp: 3299,
-      discountPercent: 33,
-      category: "Jeans",
-      gender: "MEN",
-      sizes: ["30","32","34","36"],
-      colors: ["Blue"],
-      images: [
-        "https://images.unsplash.com/photo-1516826957135-700dedea698c?q=80&w=1080&auto=format&fit=crop"
-      ],
-      tags: ["denim"],
+      description: "Experience iconic style and modern comfort with these slim-fit jeans from Levis. Crafted from premium stretch-infused cotton denim, they offer a perfect blend of structure and flexibility. The classic blue wash ensures timeless appeal. Occasion: A versatile foundation for any casual look, perfect for weekends or nights out. Season: An all-season wardrobe workhorse. Vibe: Confident, classic, and rugged.",
     },
     {
       title: "Women Black Leggings",
       brand: "H&M",
-      description: "High-waist athleisure leggings",
-      price: 799,
-      mrp: 1199,
-      discountPercent: 33,
-      category: "Bottomwear",
-      gender: "WOMEN",
-      sizes: ["XS","S","M","L"],
-      colors: ["Black"],
-      images: [
-        "https://images.unsplash.com/photo-1549576910-47d709e2c3b6?q=80&w=1080&auto=format&fit=crop"
-      ],
-      tags: ["athleisure"],
+      description: "From workouts to weekends, these H&M high-waist leggings offer unbeatable comfort and style. Made from a soft and stretchy cotton-elastane blend, they provide a supportive fit that moves with you. Occasion: Perfect for the gym, yoga sessions, running errands, or simply lounging in style. Season: An essential for every season. Vibe: Active, comfortable, and effortlessly sleek.",
     },
     {
       title: "Men Checked Casual Shirt",
       brand: "Highlander",
-      description: "Half-sleeve cotton checks",
-      price: 999,
-      mrp: 1699,
-      discountPercent: 41,
-      category: "Shirts",
-      gender: "MEN",
-      sizes: ["S","M","L","XL"],
-      colors: ["Navy"],
-      images: [
-        "https://images.unsplash.com/photo-1520975657286-4f922a9b12e8?q=80&w=1080&auto=format&fit=crop"
-      ],
-      tags: ["checks","casual"],
+      description: "A cool and casual staple, this checked shirt from Highlander is cut from soft, breathable cotton. It features a sharp spread collar and half-sleeves, making it perfect for warmer weather. Occasion: Ideal for a relaxed weekend, a casual Friday at work, or a day out with friends. Season: Best for summer and spring. Vibe: Laid-back, approachable, and stylish.",
     },
     {
       title: "Women Oversized Hoodie",
       brand: "Roadster",
-      description: "Cozy fleece hoodie",
-      price: 1499,
-      mrp: 2499,
-      discountPercent: 40,
-      category: "Sweatshirts",
-      gender: "WOMEN",
-      sizes: ["S","M","L"],
-      colors: ["Beige"],
-      images: [
-        "https://images.unsplash.com/photo-1516822003754-cca485356ecb?q=80&w=1080&auto=format&fit=crop"
-      ],
-      tags: ["hoodie","casual"],
+      description: "Stay cozy and chic in this oversized hoodie from Roadster. Crafted from a soft fleece fabric, it offers a relaxed fit for maximum comfort. The solid beige color makes it a versatile layering piece. Occasion: Perfect for lounging at home, casual coffee runs, or travel days. Season: A go-to for autumn and winter. Vibe: Comfortable, trendy, and relaxed.",
     },
     {
       title: "Unisex Baseball Cap",
       brand: "Mast & Harbour",
-      description: "Adjustable cotton cap",
-      price: 399,
-      mrp: 699,
-      discountPercent: 43,
-      category: "Accessories",
-      gender: "UNISEX",
-      sizes: ["Free"],
-      colors: ["Khaki"],
-      images: [
-        "https://images.unsplash.com/photo-1514136649217-b627b4b9cfb2?q=80&w=1080&auto=format&fit=crop"
-      ],
-      tags: ["cap","accessories"],
+      description: "Top off your look with this classic baseball cap. Made from durable cotton twill, it features an adjustable strap for a custom fit. A simple and stylish way to shield yourself from the sun. Occasion: Great for sporting events, outdoor activities, or adding a casual touch to any outfit. Season: All-season accessory. Vibe: Sporty, casual, and practical.",
     },
     {
       title: "Men Running Shorts",
       brand: "Adidas",
-      description: "Lightweight breathable shorts",
-      price: 1299,
-      mrp: 1799,
-      discountPercent: 28,
-      category: "Shorts",
-      gender: "MEN",
-      sizes: ["S","M","L","XL"],
-      colors: ["Grey"],
-      images: [
-        "https://images.unsplash.com/photo-1520972161261-381c6d8ac481?q=80&w=1080&auto=format&fit=crop"
-      ],
-      tags: ["sports"],
+      description: "Engineered for performance, these running shorts from Adidas are made from a lightweight, moisture-wicking polyester fabric to keep you dry and comfortable. The breathable design allows for maximum airflow. Occasion: Ideal for running, gym workouts, and other high-intensity sports. Season: Perfect for summer training. Vibe: Athletic, focused, and high-performance.",
     },
     {
       title: "Women Sports Bra",
       brand: "Nike",
-      description: "High support training bra",
-      price: 1599,
-      mrp: 2299,
-      discountPercent: 30,
-      category: "Activewear",
-      gender: "WOMEN",
-      sizes: ["XS","S","M","L"],
-      colors: ["Pink"],
-      images: [
-        "https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=1080&auto=format&fit=crop"
-      ],
-      tags: ["sports","athleisure"],
+      description: "Power through your workouts with this high-support sports bra from Nike. It's crafted from sweat-wicking Dri-FIT fabric with a compression fit to minimize bounce and maximize comfort. Occasion: Essential for running, HIIT, and other high-impact activities. Season: A year-round workout necessity. Vibe: Empowered, supportive, and energetic.",
     },
     {
       title: "Men Leather Belt",
       brand: "Allen Solly",
-      description: "Genuine leather formal belt",
-      price: 899,
-      mrp: 1299,
-      discountPercent: 31,
-      category: "Accessories",
-      gender: "MEN",
-      sizes: ["32","34","36","38"],
-      colors: ["Brown"],
-      images: [
-        "https://images.unsplash.com/photo-1520975602322-6624e56b9a7d?q=80&w=1080&auto=format&fit=crop"
-      ],
-      tags: ["formal"],
+      description: "Add a touch of sophistication to your ensemble with this belt from Allen Solly. Expertly crafted from genuine leather, it features a sleek metal buckle for a polished finish. Occasion: A must-have for formal events, office wear, and business meetings. Season: A timeless, all-season accessory. Vibe: Professional, sharp, and refined.",
     },
     {
       title: "Women Ethnic Kurta",
       brand: "Anouk",
-      description: "Printed straight kurta",
-      price: 999,
-      mrp: 1699,
-      discountPercent: 41,
-      category: "Ethnic Wear",
-      gender: "WOMEN",
-      sizes: ["XS","S","M","L"],
-      colors: ["Blue"],
-      images: [
-        "https://images.unsplash.com/photo-1600369672483-587e741e40c8?q=80&w=1080&auto=format&fit=crop"
-      ],
-      tags: ["desi","festive"],
+      description: "Celebrate traditional aesthetics with this elegant printed kurta from Anouk. Made from soft and comfortable cotton, it features a classic straight cut that is both graceful and stylish. Occasion: Perfect for festive gatherings, casual family functions, or daily ethnic wear. Season: Ideal for all seasons, especially during festive periods. Vibe: Graceful, traditional, and chic.",
     },
     {
       title: "Men Ethnic Nehru Jacket",
       brand: "Manyavar",
-      description: "Solid mandarin collar jacket",
-      price: 2499,
-      mrp: 3499,
-      discountPercent: 29,
-      category: "Ethnic Wear",
-      gender: "MEN",
-      sizes: ["M","L","XL"],
-      colors: ["Maroon"],
-      images: [
-        "https://images.unsplash.com/photo-1594633313593-bab3825d0caf?q=80&w=1080&auto=format&fit=crop"
-      ],
-      tags: ["wedding","festive"],
+      description: "Elevate your ethnic attire with this sophisticated Nehru jacket from Manyavar. Crafted from a rich blended fabric, this solid maroon jacket features a sharp mandarin collar for a regal look. Occasion: An excellent choice for weddings, sangeets, and other grand festive celebrations. Season: A year-round staple for ethnic events. Vibe: Royal, dapper, and celebratory.",
     },
     {
       title: "Women Heeled Sandals",
       brand: "Catwalk",
-      description: "Block heels for parties",
-      price: 1499,
-      mrp: 2299,
-      discountPercent: 35,
-      category: "Footwear",
-      gender: "WOMEN",
-      sizes: ["4","5","6","7"],
-      colors: ["Gold"],
-      images: [
-        "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=1080&auto=format&fit=crop"
-      ],
-      tags: ["heels","party"],
+      description: "Step into the spotlight with these stunning heeled sandals from Catwalk. Featuring elegant straps and a comfortable yet stylish block heel, these golden sandals are designed to make a statement. Occasion: The perfect accessory for parties, weddings, and formal evening events. Season: A glamorous choice for any party season. Vibe: Glamorous, confident, and chic.",
     },
     {
       title: "Men Formal Oxford Shoes",
       brand: "Red Tape",
-      description: "Classic leather oxfords",
-      price: 2799,
-      mrp: 3999,
-      discountPercent: 30,
-      category: "Footwear",
-      gender: "MEN",
-      sizes: ["7","8","9","10"],
-      colors: ["Black"],
-      images: [
-        "https://images.unsplash.com/photo-1520974735194-6a4f3b1037c4?q=80&w=1080&auto=format&fit=crop"
-      ],
-      tags: ["formal","office"],
+      description: "Command attention in the boardroom with these classic Oxford shoes by Red Tape. Meticulously crafted from high-quality genuine leather, they feature a sleek, timeless design that exudes professionalism. Occasion: Essential for business meetings, formal events, and daily office wear. Season: An all-season formal staple. Vibe: Sophisticated, powerful, and elegant.",
     },
     {
       title: "Unisex Denim Jacket",
       brand: "Levis",
-      description: "Classic trucker jacket",
-      price: 2499,
-      mrp: 3499,
-      discountPercent: 29,
-      category: "Jackets",
-      gender: "UNISEX",
-      sizes: ["S","M","L","XL"],
-      colors: ["Blue"],
-      images: [
-        "https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=1080&auto=format&fit=crop"
-      ],
-      tags: ["denim","streetwear"],
+      description: "An undisputed icon of style, the Levis trucker jacket is a must-have in any wardrobe. This unisex piece is made from durable, non-stretch cotton denim that gets better with age. Occasion: The ultimate layering piece for concerts, casual outings, and travel. Season: Perfect for spring, autumn, and cool summer evenings. Vibe: Timeless, rebellious, and effortlessly cool.",
     },
     {
       title: "Women Cardigan Sweater",
       brand: "ONLY",
-      description: "Soft knit buttoned cardigan",
-      price: 1299,
-      mrp: 1999,
-      discountPercent: 35,
-      category: "Knitwear",
-      gender: "WOMEN",
-      sizes: ["S","M","L"],
-      colors: ["Cream"],
-      images: [
-        "https://images.unsplash.com/photo-1475180098004-ca77a66827be?q=80&w=1080&auto=format&fit=crop"
-      ],
-      tags: ["winter"],
+      description: "Wrap yourself in warmth and style with this soft-knit cardigan from ONLY. It features a classic button-front design and is crafted from a cozy acrylic blend, making it a perfect layering piece. Occasion: Ideal for a day at the office, a casual brunch, or relaxing at home. Season: An essential for autumn and winter. Vibe: Cozy, chic, and sophisticated.",
     },
     {
       title: "Men Puffer Jacket",
       brand: "Wildcraft",
-      description: "Lightweight insulated puffer",
-      price: 2999,
-      mrp: 4499,
-      discountPercent: 33,
-      category: "Jackets",
-      gender: "MEN",
-      sizes: ["M","L","XL"],
-      colors: ["Olive"],
-      images: [
-        "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1080&auto=format&fit=crop"
-      ],
-      tags: ["winter","outdoor"],
+      description: "Brave the cold with this lightweight yet incredibly warm puffer jacket from Wildcraft. It's engineered with thermal insulation to protect you from the elements without weighing you down. Occasion: Perfect for winter travel, hiking, and everyday protection from the cold. Season: A winter wardrobe essential. Vibe: Adventurous, functional, and modern.",
     },
     {
       title: "Women Straight Pants",
       brand: "Zara",
-      description: "High-rise straight leg",
-      price: 1999,
-      mrp: 2999,
-      discountPercent: 33,
-      category: "Bottomwear",
-      gender: "WOMEN",
-      sizes: ["XS","S","M","L"],
-      colors: ["Beige"],
-      images: [
-        "https://images.unsplash.com/photo-1558769132-cb1aea458c5e?q=80&w=1080&auto=format&fit=crop"
-      ],
-      tags: ["office","minimal"],
+      description: "Achieve a sleek, modern silhouette with these high-rise straight-leg pants from Zara. The clean lines and structured fabric create a polished look that can transition effortlessly from day to night. Material: A comfortable and durable polyester blend. Occasion: Ideal for office wear, business casual meetings, or a sophisticated evening out. Season: A versatile, all-season piece. Vibe: Minimalist, powerful, and chic.",
     },
     {
       title: "Unisex Graphic Tee",
       brand: "Bewakoof",
-      description: "Oversized printed t-shirt",
-      price: 699,
-      mrp: 1199,
-      discountPercent: 42,
-      category: "T-Shirts",
-      gender: "UNISEX",
-      sizes: ["S","M","L","XL"],
-      colors: ["White"],
-      images: [
-        "https://images.unsplash.com/photo-1554568218-0f1715e72254?q=80&w=1080&auto=format&fit=crop"
-      ],
-      tags: ["graphic","streetwear"],
+      description: "Make a statement without saying a word in this oversized graphic t-shirt from Bewakoof. Made from soft cotton and featuring a bold, expressive print, this tee is all about personality. Occasion: Perfect for college, casual hangouts, concerts, or any time you want to show off your unique style. Season: An all-season favorite. Vibe: Expressive, bold, and trendy.",
     },
     {
       title: "Men Training Trackpants",
       brand: "Puma",
-      description: "Moisture-wicking joggers",
-      price: 1499,
-      mrp: 2299,
-      discountPercent: 35,
-      category: "Trackpants",
-      gender: "MEN",
-      sizes: ["S","M","L","XL"],
-      colors: ["Black"],
-      images: [
-        "https://images.unsplash.com/photo-1517676109074-56a5b6ad1ef3?q=80&w=1080&auto=format&fit=crop"
-      ],
-      tags: ["athleisure"],
+      description: "Combine performance and streetwear style with these training trackpants from Puma. They are crafted from moisture-wicking fabric to keep you cool and dry, featuring a tapered fit for a modern look. Occasion: Excellent for gym sessions, training, or as part of a stylish athleisure outfit. Season: A versatile piece for all seasons. Vibe: Athletic, focused, and stylish.",
     },
     {
       title: "Women Tote Bag",
       brand: "Lino Perros",
-      description: "Faux leather spacious tote",
-      price: 1799,
-      mrp: 2799,
-      discountPercent: 36,
-      category: "Bags",
-      gender: "WOMEN",
-      sizes: ["Free"],
-      colors: ["Tan"],
-      images: [
-        "https://images.unsplash.com/photo-1520975652066-c0fd37f65d05?q=80&w=1080&auto=format&fit=crop"
-      ],
-      tags: ["bag","office"],
+      description: "Carry your essentials in style with this spacious and structured tote bag from Lino Perros. Made from high-quality faux leather with a refined tan finish, it's both functional and fashionable. Occasion: The perfect companion for work, shopping trips, or everyday use. Season: A classic, all-season handbag. Vibe: Sophisticated, organized, and elegant.",
     },
     {
       title: "Unisex Wayfarer Sunglasses",
       brand: "Ray-Ban",
-      description: "UV-protected wayfarers",
-      price: 3999,
-      mrp: 5999,
-      discountPercent: 33,
-      category: "Accessories",
-      gender: "UNISEX",
-      sizes: ["Free"],
-      colors: ["Black"],
-      images: [
-        "https://images.unsplash.com/photo-1518544801976-3e188ae6069f?q=80&w=1080&auto=format&fit=crop"
-      ],
-      tags: ["sunglasses","summer"],
+      description: "An icon of cool, the Ray-Ban Wayfarer is a timeless accessory that never goes out of style. Offering 100% UV protection, these sunglasses combine classic design with superior lens technology. Occasion: A must-have for sunny days, driving, vacations, or simply adding an edge to your look. Season: A year-round essential, especially for summer. Vibe: Iconic, confident, and effortlessly cool.",
     },
     {
       title: "Men Polo T-Shirt",
       brand: "U.S. Polo Assn.",
-      description: "Cotton pique polo",
-      price: 1199,
-      mrp: 1799,
-      discountPercent: 33,
-      category: "T-Shirts",
-      gender: "MEN",
-      sizes: ["S","M","L","XL"],
-      colors: ["Navy"],
-      images: [
-        "https://images.unsplash.com/photo-1520971347561-8c6154b87b1e?q=80&w=1080&auto=format&fit=crop"
-      ],
-      tags: ["polo","casual"],
+      description: "Achieve a look of smart, preppy style with this classic polo t-shirt from U.S. Polo Assn. It's crafted from breathable cotton pique fabric and features the iconic embroidered logo on the chest. Occasion: Perfect for a smart-casual look at brunches, golf outings, or casual Fridays. Season: An all-season classic. Vibe: Preppy, polished, and timeless.",
     }
   ];
 
-  const tribes = [
-    { name: "Streetwear Squad", description: "Hype and sneakers.", slug: "streetwear-squad", coverImage: "https://placehold.co/1200x400/111827/fff?text=Streetwear+Squad", memberCount: 15234, tags: ["streetwear","sneakers"] },
-    { name: "Eco-Chic Circle", description: "Sustainable fits.", slug: "eco-chic-circle", coverImage: "https://placehold.co/1200x400/065f46/fff?text=Eco+Chic", memberCount: 9721, tags: ["sustainable","eco"] },
-    { name: "Desi Glam Gang", description: "Ethnic glam.", slug: "desi-glam-gang", coverImage: "https://placehold.co/1200x400/b91c1c/fff?text=Desi+Glam", memberCount: 18765, tags: ["ethnic","festive"] }
-  ];
+  try {
+    // Create an array of promises for each update operation
+    const updatePromises = productsWithNewDescriptions.map(productData =>
+      Product.updateOne(
+        { title: productData.title }, // Find the document by its title
+        { $set: { description: productData.description } } // Set the new description
+      )
+    );
 
-  const quests = [
-    { title: "Festive Friday", description: "Create a festive look.", rewardType: "DISCOUNT", rewardValue: "20% OFF", isActive: true, progress: 0 },
-    { title: "Accessorize It!", description: "Add 3 accessories.", rewardType: "BADGE", rewardValue: "Bling Badge", isActive: true, progress: 0 },
-    { title: "Monochrome Magic", description: "Style a single color.", rewardType: "POINTS", rewardValue: "50 Insider Points", isActive: true, progress: 0 }
-  ];
+    // Execute all update promises in parallel
+    const results = await Promise.all(updatePromises);
 
-  // Seed Products (only if empty)
-  const existingProducts = await Product.countDocuments();
-  if (existingProducts === 0) {
-    await Product.insertMany(products);
+    const totalModified = results.reduce((sum, result) => sum + (result.modifiedCount || 0), 0);
+    const totalMatched = results.reduce((sum, result) => sum + (result.matchedCount || 0), 0);
+
+    console.log(`Update complete. Matched: ${totalMatched}, Modified: ${totalModified}`);
+
+    return NextResponse.json({
+      ok: true,
+      message: `Successfully updated descriptions for ${totalModified} of ${totalMatched} matched products.`
+    });
+
+  } catch (error) {
+    console.error("Failed to update product descriptions:", error);
+    return NextResponse.json(
+      { ok: false, message: "An error occurred during the update process." },
+      { status: 500 }
+    );
   }
-
-  // Seed Tribes (upsert by slug)
-  for (const t of tribes) {
-    await Tribe.updateOne({ slug: t.slug }, { $set: t }, { upsert: true });
-  }
-
-  // Seed Quests
-  const existingQuests = await Quest.countDocuments();
-  if (existingQuests === 0) {
-    await Quest.insertMany(quests);
-  }
-
-  // Seed a sample Drop with first 6 products
-  const firstSix = await Product.find({}).limit(6);
-  const now = new Date();
-  const later = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-  const drop = {
-    creatorName: "Campus Creator Aisha",
-    collectionName: "Monsoon Neutrals",
-    imageUrl: "https://placehold.co/1200x400/7c3aed/fff?text=Creator+Drop",
-    startsAt: now,
-    endsAt: later,
-    products: firstSix.map(p => p._id),
-  };
-  await Drop.updateOne(
-    { creatorName: drop.creatorName, collectionName: drop.collectionName },
-    { $set: drop },
-    { upsert: true }
-  );
-
-  return NextResponse.json({ ok: true });
 }
-
-

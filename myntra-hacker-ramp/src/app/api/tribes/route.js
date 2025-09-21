@@ -19,20 +19,9 @@ export async function POST(request) {
   const body = await request.json();
   const { action } = body;
 
+  // Remove tribe creation for regular users - only allow admin creation
   if (action === "create") {
-    const { name, description, coverImage, tags } = body;
-    const slug = name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
-    const created = await Tribe.create({
-      name,
-      description,
-      slug,
-      coverImage: coverImage || "https://placehold.co/1200x400/7c3aed/fff?text=" + encodeURIComponent(name),
-      tags: tags || [],
-      owner: body.ownerId,
-      members: [body.ownerId],
-      memberCount: 1,
-    });
-    return NextResponse.json(created, { status: 201 });
+    return NextResponse.json({ error: "Tribe creation is only available for administrators" }, { status: 403 });
   }
 
   if (action === "join") {

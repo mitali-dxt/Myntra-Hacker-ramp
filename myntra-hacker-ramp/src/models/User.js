@@ -17,9 +17,7 @@ const UserSchema = new Schema(
   { timestamps: true }
 );
 
-// Add indexes separately to avoid duplicates
-UserSchema.index({ username: 1 });
-UserSchema.index({ email: 1 });
+// Indexes are already created by unique: true, no need to add separately
 
 export default mongoose.models.User || mongoose.model("User", UserSchema);
 

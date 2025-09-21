@@ -8,7 +8,7 @@ from tqdm import tqdm
 DATA_DIR = Path("data")
 IMAGE_DIR = DATA_DIR / "Images"
 CSV_FILE = DATA_DIR / "products.csv"
-MAX_IMAGES_TO_DOWNLOAD = 1000 # Set to the number of products you want to index
+MAX_IMAGES_TO_DOWNLOAD = 14330
 
 # --- Main Logic ---
 if __name__ == "__main__":

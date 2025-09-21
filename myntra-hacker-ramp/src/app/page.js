@@ -7,6 +7,8 @@ import SectionTitle from '@/components/SectionTitle';
 import TribeCard from '@/components/TribeCard';
 import CreatorDropCard from '@/components/CreatorDropCard';
 import StyleQuestCard from '@/components/StyleQuestCard';
+import SearchForm from '@/components/SearchForm';
+import ResultsGrid from '@/components/ResultsGrid';
 import { ShoppingBag } from 'lucide-react';
 
 export default function HomePage() {
@@ -14,6 +16,9 @@ export default function HomePage() {
   const [tribes, setTribes] = useState([]);
   const [drops, setDrops] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearchLoading, setIsSearchLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
 
   useEffect(() => {
     fetchAllData();
@@ -42,6 +47,35 @@ export default function HomePage() {
       setLoading(false);
     }
   }
+
+  const handleSearch = async ({ textQuery, imageFile }) => {
+    setIsSearchLoading(true);
+    setHasSearched(true);
+    setSearchResults([]);
+
+    const formData = new FormData();
+    formData.append('query_text', textQuery);
+    if (imageFile) {
+      formData.append('query_image', imageFile);
+    }
+
+    try {
+      const response = await fetch('http://127.0.0.1:8000/search', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error('Search request failed');
+      const data = await response.json();
+      setSearchResults(data.results || []);
+
+    } catch (error) {
+      console.error("Error fetching search results:", error);
+      alert("An error occurred during search. Make sure the backend server is running.");
+    } finally {
+      setIsSearchLoading(false);
+    }
+  };
 
 
 
@@ -86,6 +120,23 @@ export default function HomePage() {
       <section className="mb-12">
         <div className="bg-cover bg-center h-96 rounded-lg shadow-lg" style={{backgroundImage: "url('https://placehold.co/1200x400/E91E63/FFFFFF?text=Biggest+Fashion+Sale\\nUP+TO+80%25+OFF')"}}>
         </div>
+      </section>
+
+      {/* --- FEATURE 0: Visual Search --- */}
+       <section className="mb-16 flex flex-col items-center">
+        <SectionTitle 
+          title="Myntra Visual Search"
+          subtitle="Find your next favorite outfit using text, an image, or both!"
+        />
+        <SearchForm onSearch={handleSearch} isLoading={isSearchLoading} />
+      </section>
+
+      <section className="mb-16">
+        {isSearchLoading && <p className="text-center text-lg">Searching...</p>}
+        {hasSearched && !isSearchLoading && searchResults.length === 0 && (
+          <p className="text-center text-lg text-gray-500">No results found. Try a different search!</p>
+        )}
+        <ResultsGrid results={searchResults} />
       </section>
       
       {/* --- FEATURE 1: Fashion Tribes --- */}

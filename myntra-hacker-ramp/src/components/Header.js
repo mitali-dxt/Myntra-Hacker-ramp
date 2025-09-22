@@ -3,17 +3,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { Heart, Search, ShoppingBag, User } from 'lucide-react';
 import Link from 'next/link'; // Use Next.js Link for navigation
-import { useCart } from '../hooks/useCart';
-import { useWishlist } from '../hooks/useWishlist';
+import { useCartWishlistContext } from '../contexts/CartWishlistContext';
 
 export default function Header({ onCartOpen, onWishlistOpen }) {
   const [user, setUser] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   
-  // Cart and Wishlist hooks
-  const { getTotalItems: getCartItemsCount } = useCart();
-  const { getTotalItems: getWishlistItemsCount } = useWishlist();
+  // Cart and Wishlist context
+  const { cart, wishlist } = useCartWishlistContext();
+  const { getTotalItems: getCartItemsCount } = cart;
+  const { getTotalItems: getWishlistItemsCount } = wishlist;
   
   const cartCount = getCartItemsCount();
   const wishlistCount = getWishlistItemsCount();

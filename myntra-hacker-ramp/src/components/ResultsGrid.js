@@ -21,7 +21,6 @@ export default function ResultsGrid({ results }) {
             <div className="p-4">
               <h3 className="font-bold text-sm truncate">{item.brand}</h3>
               <p className="text-xs text-gray-600 truncate">{item.product_name}</p>
-              <p className="text-xs font-semibold text-pink-500 mt-2">Score: {Math.round(item.score * 100)}%</p>
             </div>
           </div>
         ))}

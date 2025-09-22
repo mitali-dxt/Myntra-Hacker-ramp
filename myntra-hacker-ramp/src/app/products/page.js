@@ -2,8 +2,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Search, Filter, Heart, ShoppingCart, Star, Grid, List, X, Plus, Minus, Truck, Shield, RotateCcw } from "lucide-react";
-import { useCart } from "../../hooks/useCart";
-import { useWishlist } from "../../hooks/useWishlist";
+import { useCartWishlistContext } from "../../contexts/CartWishlistContext";
 
 export default function ProductsPage() {
   const [products, setProducts] = useState([]);
@@ -18,10 +17,17 @@ export default function ProductsPage() {
   const [selectedColor, setSelectedColor] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [addedToCartId, setAddedToCartId] = useState(null);
-  
-  // Cart and Wishlist hooks
-  const { addToCart, isInCart } = useCart();
-  const { toggleWishlist, isInWishlist } = useWishlist();
+
+  // Use context for cart and wishlist
+  const { cart, wishlist } = useCartWishlistContext();
+  const { addToCart, isInCart } = cart;
+  const { toggleWishlist, isInWishlist, moods, addToWishlist } = wishlist;
+
+
+
+  // State for mood selection
+  const [showMoodSelector, setShowMoodSelector] = useState(null);
+  const [selectedMoodForProduct, setSelectedMoodForProduct] = useState(null);
 
   useEffect(() => {
     fetchProducts();
@@ -55,7 +61,27 @@ export default function ProductsPage() {
   };
 
   const handleToggleWishlist = (product) => {
-    toggleWishlist(product);
+    console.log('Moods available:', moods); // Debug log
+    if (isInWishlist(product._id)) {
+      // If already in wishlist, remove it
+      toggleWishlist(product);
+    } else {
+      // If not in wishlist, show mood selector
+      setSelectedMoodForProduct(product);
+      setShowMoodSelector(product._id);
+    }
+  };
+  
+  const handleAddToWishlistWithMood = (product, moodId) => {
+    addToWishlist(product, moodId);
+    setShowMoodSelector(null);
+    setSelectedMoodForProduct(null);
+    
+    // Auto-open wishlist drawer
+    if (typeof window !== 'undefined') {
+      // Trigger wishlist open event
+      window.dispatchEvent(new CustomEvent('openWishlist'));
+    }
   };
   
   const handleAddToCart = (product, size = "", color = "", qty = 1) => {
@@ -65,6 +91,12 @@ export default function ProductsPage() {
       setAddedToCartId(product._id);
       setTimeout(() => setAddedToCartId(null), 2000); // Clear after 2 seconds
       console.log(`Added ${product.title} to cart`);
+      
+      // Auto-open cart drawer
+      if (typeof window !== 'undefined') {
+        // Trigger cart open event
+        window.dispatchEvent(new CustomEvent('openCart'));
+      }
     } catch (error) {
       console.error('Error adding to cart:', error);
     }
@@ -126,6 +158,7 @@ export default function ProductsPage() {
               >
                 Search
               </button>
+              
             </form>
           </div>
         </div>
@@ -589,8 +622,68 @@ export default function ProductsPage() {
           </div>
         </div>
       )}
+
+      {/* Mood Selector Modal */}
+      {showMoodSelector && selectedMoodForProduct && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-2xl p-6 w-96 mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-slate-900">Add to Wishlist💓</h3>
+              <button
+                onClick={() => {
+                  setShowMoodSelector(null);
+                  setSelectedMoodForProduct(null);
+                }}
+                className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center hover:bg-slate-200 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <img
+                src={selectedMoodForProduct.images?.[0] || '/placeholder-product.jpg'}
+                alt={selectedMoodForProduct.title}
+                className="w-full h-40 object-cover rounded-xl"
+                onError={(e) => {
+                  e.target.src = 'https://via.placeholder.com/400x300/e2e8f0/64748b?text=Product';
+                }}
+              />
+              <h4 className="font-semibold text-slate-900 mt-2">{selectedMoodForProduct.title}</h4>
+              <p className="text-sm text-slate-600">Choose a collection for this item</p>
+            </div>
+            
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {console.log('Rendering moods:', moods, 'Length:', moods?.length)} {/* Debug log */}
+              {moods && moods.length > 0 ? moods.map((mood) => (
+                <button
+                  key={mood.id}
+                  onClick={() => handleAddToWishlistWithMood(selectedMoodForProduct, mood.id)}
+                  className="w-full flex items-center space-x-3 p-3 rounded-lg hover:bg-slate-50 transition-colors border border-slate-200"
+                >
+                  <div 
+                    className="w-5 h-5 rounded-full" 
+                    style={{ backgroundColor: mood.color }}
+                  />
+                  <div className="flex-1 text-left">
+                    <div className="font-medium text-slate-900">{mood.name}</div>
+                    <div className="text-xs text-slate-600">{mood.items?.length || 0} items</div>
+                  </div>
+                  <Heart className="w-4 h-4 text-slate-400" />
+                </button>
+              )) : (
+                <div className="text-center py-4 text-slate-500">
+                  <p>No collections available</p>
+                  <p className="text-xs">Collections will be created automatically</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
 
+
+}
 

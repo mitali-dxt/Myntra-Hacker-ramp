@@ -2,9 +2,10 @@
 
 import { X, Plus, Minus, Trash2, ShoppingCart } from 'lucide-react';
 import Image from 'next/image';
-import { useCart } from '../hooks/useCart';
+import { useCartWishlistContext } from '../contexts/CartWishlistContext';
 
 export default function CartDrawer({ isOpen, onClose }) {
+  const { cart } = useCartWishlistContext();
   const { 
     cartItems, 
     updateQuantity, 
@@ -12,7 +13,7 @@ export default function CartDrawer({ isOpen, onClose }) {
     clearCart, 
     getTotalPrice, 
     getTotalItems 
-  } = useCart();
+  } = cart;
 
   const totalPrice = getTotalPrice();
   const totalItems = getTotalItems();

@@ -4,6 +4,7 @@ from typing import List, Optional
 import tempfile
 import numpy as np
 import pandas as pd
+from rembg import remove
 from tqdm import tqdm
 import pickle 
 import google.generativeai as genai
@@ -19,6 +20,7 @@ from haystack.components.writers import DocumentWriter
 from fastapi import FastAPI, Form, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import StreamingResponse
 
 IMAGE_DIR = Path("data") / "Images"
 CSV_FILE = Path("data") / "products.csv"
@@ -45,12 +47,10 @@ def index_products_from_csv():
     if STORE_FILE_PATH.exists():
         print(f"🧠 Found existing documents file. Loading '{STORE_FILE_PATH}'...")
         with open(STORE_FILE_PATH, "rb") as f:
-            # We load the LIST of documents, not the store object
             all_docs = pickle.load(f)
         document_store.write_documents(all_docs)
         print(f"✅ Loaded {document_store.count_documents()} documents into the store.")
     
-    # --- Prepare all documents from CSV and filter out those already indexed ---
     df = pd.read_csv(CSV_FILE).head(MAX_PRODUCTS_TO_INDEX)
     df.drop_duplicates(subset=['p_id'], inplace=True)
     df = df.where(pd.notnull(df), None)
@@ -74,22 +74,20 @@ def index_products_from_csv():
         print("✅ All products are already indexed. Nothing to do.")
         return
 
-    # --- Build the pipeline ---
+    # Build the pipeline 
     indexing_pipeline = Pipeline()
     indexing_pipeline.add_component("embedder", image_embedder)
     indexing_pipeline.add_component("writer", DocumentWriter(document_store=document_store, policy="overwrite"))
     indexing_pipeline.connect("embedder.documents", "writer.documents")
 
-    # --- Run the pipeline in batches, saving after each batch ---
     batch_size = 64
-    print(f"🧠 Indexing {len(documents_to_index)} new products in batches of {batch_size}...")
+    print(f"Indexing {len(documents_to_index)} new products in batches of {batch_size}...")
     
     for i in tqdm(range(0, len(documents_to_index), batch_size), desc="Indexing Batches"):
         batch = documents_to_index[i:i + batch_size]
         try:
             indexing_pipeline.run({"embedder": {"documents": batch}})
-            
-            # Save the LIST of ALL documents in the store after each successful batch
+  
             all_docs_in_store = document_store.filter_documents()
             with open(STORE_FILE_PATH, "wb") as f:
                 pickle.dump(all_docs_in_store, f)
@@ -121,9 +119,6 @@ def get_keywords_from_vibe(vibe_text: str) -> str:
         
         Vibe: "outfit for a coffee date in Mumbai"
         Keywords: "casual dress, pink dress, white top, denim skirt, A-line skirt, flared jeans, crop top, brunch outfit"
-
-        Vibe: "bohemian festival look"
-        Keywords: "flowy maxi dress, fringe vest, crochet top, wide-leg pants, paisley print blouse, peasant top, bohemian skirt"
 
         Vibe: "{vibe_text}"
         Keywords:
@@ -178,14 +173,10 @@ def search_products(query_text: Optional[str], query_image_path: Optional[Path],
         })
     return formatted_results
 
-# ======================================================================================
-# --- 4. FASTAPI APPLICATION ---
-# ======================================================================================
 app = FastAPI(title="Myntra Visual Search API")
 app.mount("/static", StaticFiles(directory=IMAGE_DIR), name="static")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-# MODIFIED: The startup logic is now smarter
 @app.on_event("startup")
 def on_startup():
     print("🚀 Server starting up...")
@@ -195,8 +186,6 @@ def on_startup():
     image_embedder.warm_up()
     print("✅ Backend is ready to accept requests!")
 
-
-# The search and health endpoints remain the same
 @app.post("/search")
 async def handle_search(
     query_text: str = Form(""),

@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Heart, Search, ShoppingBag, User } from 'lucide-react';
-import Link from 'next/link'; // Use Next.js Link for navigation
+import Link from 'next/link'; 
+import Image from 'next/image';
 import { useCartWishlistContext } from '../contexts/CartWishlistContext';
 
 export default function Header({ onCartOpen, onWishlistOpen }) {
@@ -49,8 +50,14 @@ export default function Header({ onCartOpen, onWishlistOpen }) {
         <div className="flex items-center justify-between h-20">
           {/* Left Side: Logo & Nav */}
           <div className="flex items-center space-x-8">
-            <Link href="/" className="text-3xl font-extrabold text-pink-500 italic">
-              myntra
+           <Link href="/" className="flex items-center">
+              <Image
+                src="/myntra-logo.jpeg" 
+                alt="Myntra Logo"
+                width={80} 
+                height={60} 
+                priority 
+              />
             </Link>
             <nav className="hidden md:flex items-center space-x-6">
               <Link href="/products" className="font-bold text-sm text-gray-700 uppercase tracking-wider border-b-4 border-transparent hover:border-pink-500 pb-1 transition-all">Products</Link>

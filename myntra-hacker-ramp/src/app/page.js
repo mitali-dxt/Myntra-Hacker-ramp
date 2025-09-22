@@ -116,17 +116,12 @@ export default function HomePage() {
   }
   return (
     <div className="container mx-auto px-4 lg:px-8 py-8">
-      {/* Hero Section */}
-      <section className="mb-12">
-        <div className="bg-cover bg-center h-96 rounded-lg shadow-lg" style={{backgroundImage: "url('https://placehold.co/1200x400/E91E63/FFFFFF?text=Biggest+Fashion+Sale\\nUP+TO+80%25+OFF')"}}>
-        </div>
-      </section>
 
       {/* --- FEATURE 0: Visual Search --- */}
        <section className="mb-16 flex flex-col items-center">
         <SectionTitle 
-          title="Myntra Visual Search"
-          subtitle="Find your next favorite outfit using text, an image, or both!"
+          title="Myntra Fusion Search"
+          subtitle="Go beyond standard search. Combine a photo with a description, or search an entire vibe"
         />
         <SearchForm onSearch={handleSearch} isLoading={isSearchLoading} />
       </section>

@@ -10,6 +10,7 @@ from rembg import remove
 from tqdm import tqdm
 import pickle 
 import google.generativeai as genai
+import requests
 
 from haystack.core.pipeline import Pipeline
 from haystack.dataclasses import Document
@@ -24,9 +25,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse
 
-IMAGE_DIR = Path("data") / "Images"
-CSV_FILE = Path("data") / "products.csv"
-STORE_FILE_PATH = Path("myntra_document_store.pkl")  
+IS_ON_RENDER = "RENDER" in os.environ
+DATA_DIR = Path("/var/data/myntra" if IS_ON_RENDER else "data")
+
+IMAGE_DIR = DATA_DIR / "Images"
+CSV_FILE = DATA_DIR / "products.csv"
+STORE_FILE_PATH = DATA_DIR / "myntra_document_store.pkl" 
 MODEL_NAME = "sentence-transformers/clip-ViT-L-14"   
 MAX_PRODUCTS_TO_INDEX = 14330
 
@@ -40,6 +44,45 @@ document_store = InMemoryDocumentStore(embedding_similarity_function="cosine")
 text_embedder = SentenceTransformersTextEmbedder(model=MODEL_NAME)
 image_embedder = SentenceTransformersDocumentImageEmbedder(model=MODEL_NAME, batch_size=32)
 retriever = InMemoryEmbeddingRetriever(document_store=document_store)
+
+def download_and_prepare_data():
+    """
+    Downloads images from URLs in the CSV if they don't exist locally.
+    This runs once on the server to set up the data.
+    """
+    print(" étape 1 : Vérification des données... ") # Step 1: Verifying data...
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    IMAGE_DIR.mkdir(parents=True, exist_ok=True)
+
+    # First, we need the CSV file. If it doesn't exist, we can't do anything.
+    # For deployment, you should add the 'products.csv' to your Git repository.
+    if not CSV_FILE.exists():
+        print(f"❌ ERROR: '{CSV_FILE}' not found. Please add it to your project's data folder.")
+        return
+
+    df = pd.read_csv(CSV_FILE).head(MAX_PRODUCTS_TO_INDEX)
+    
+    print(f"🖼️ Checking for {len(df)} images...")
+    for _, row in tqdm(df.iterrows(), total=df.shape[0], desc="Checking Images"):
+        img_url = row.get('img')
+        product_id = row.get('p_id')
+
+        if not all([img_url, product_id]):
+            continue
+
+        local_filepath = IMAGE_DIR / f"{product_id}.jpg"
+
+        if not local_filepath.exists():
+            try:
+                response = requests.get(img_url, stream=True, timeout=10)
+                response.raise_for_status()
+                with open(local_filepath, 'wb') as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        f.write(chunk)
+            except requests.exceptions.RequestException as e:
+                print(f"\n❌ Could not download {img_url}. Error: {e}")
+    
+    print("✅ Image check/download process complete.")
 
 def index_products_from_csv():
     global document_store
@@ -185,6 +228,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, 
 @app.on_event("startup")
 def on_startup():
     print("🚀 Server starting up...")
+    download_and_prepare_data()
     index_products_from_csv() 
     print("🔥 Warming up models...")
     text_embedder.warm_up()

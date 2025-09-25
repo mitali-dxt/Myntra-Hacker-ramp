@@ -110,8 +110,9 @@ def get_keywords_from_vibe(vibe_text: str) -> str:
         prompt = f"""
         You are a fashion expert and stylist for Myntra. A user is searching for an outfit based on a "vibe".
         Your task is to convert their abstract query into a comma-separated list of 7-10 diverse and concrete search keywords.
-        Crucially, only include clothing items like tops, bottoms, dresses, and jackets. **Do not include accessories, bags, jewelry, or footwear.**
-        Focus on clothing types, styles, colors, and patterns. Do not include explanations.
+        When a location is mentioned (like Mumbai, Patna, Delhi), you MUST consider the typical weather for that location and suggest season-appropriate clothing.
+        Crucially, only include clothing items like tops, bottoms, dresses, jackets and clothing apparel. **Do not include accessories, bags, jewelry, or footwear.**
+        Focus on clothing types, styles, colors associated with the vibe, and patterns. Do not include explanations.
 
         Vibe: "outfits for a rainy day in Bengaluru"
         Keywords: "waterproof jacket, dark wash jeans, cozy sweater, trench coat, casual trousers, full-sleeve top, relaxed-fit pants"
@@ -119,8 +120,8 @@ def get_keywords_from_vibe(vibe_text: str) -> str:
         Vibe: "what to wear to a sangeet"
         Keywords: "lehenga, sharara, anarkali suit, vibrant colors, intricate embroidery, festive blouse, indian ethnic wear, embroidered kurta"
         
-        Vibe: "outfit for a coffee date in Mumbai"
-        Keywords: "casual dress, pink dress, white top, denim skirt, A-line skirt, flared jeans, crop top, brunch outfit"
+        Vibe: "outfit for a coffee date in mumbai"
+        Keywords: "brown casual dress, pink dress, white top, denim skirt, A-line skirt, flared jeans, crop top, brunch outfit"
 
         Vibe: "{vibe_text}"
         Keywords:
@@ -132,25 +133,24 @@ def get_keywords_from_vibe(vibe_text: str) -> str:
         return vibe_text
     
 def search_products(query_text: Optional[str], query_image_path: Optional[Path], top_k: int = 10) -> List:
-    text_embedding, image_embedding = None, None
-    processed_text = query_text
+    text_embedding = None
+    image_embedding = None
 
-    # --- 1. Check for "vibe" and process with Gemini if needed ---
-    if query_text and len(query_text.split()) > 3: 
+    # Vibe Search Pre-processing (For Text-Only Queries)
+    if query_text and not query_image_path and len(query_text.split()) > 3:
         print(f"Vibe detected. Getting keywords for: '{query_text}'")
-        processed_text = get_keywords_from_vibe(query_text)
-        print(f"Using generated keywords: '{processed_text}'")
+        query_text = get_keywords_from_vibe(query_text)
+        print(f"Using generated keywords: '{query_text}'")
 
-    # --- 2. Create text embedding if text is provided ---
-    if processed_text:
-        text_embedding = text_embedder.run(text=processed_text)["embedding"]
+    # Create Embeddings
+    if query_text:
+        text_embedding = text_embedder.run(text=query_text)["embedding"]
 
-    # --- 3. Create image embedding if image is provided ---
     if query_image_path:
         image_doc = Document(meta={"file_path": str(query_image_path.resolve())})
         image_embedding = image_embedder.run(documents=[image_doc])["documents"][0].embedding
 
-    # --- 4. Combine embeddings ---
+    # Combine Embeddings (Fusion Logic)
     if text_embedding is not None and image_embedding is not None:
         final_embedding = np.average([text_embedding, image_embedding], axis=0).tolist()
     elif text_embedding is not None:
@@ -160,8 +160,10 @@ def search_products(query_text: Optional[str], query_image_path: Optional[Path],
     else:
         return []
 
-    # --- 5. Run the retriever and format results (No changes here) ---
+    # Run the Retriever
     result = retriever.run(query_embedding=final_embedding, top_k=top_k)
+
+    # Process and Format Results
     formatted_results = []
     for doc in result["documents"]:
         image_path = Path(doc.meta.get("file_path", ""))
@@ -173,6 +175,7 @@ def search_products(query_text: Optional[str], query_image_path: Optional[Path],
             "score": doc.score,
             "image_url": f"/static/{image_path.name}"
         })
+    
     return formatted_results
 
 app = FastAPI(title="Myntra Visual Search API")
